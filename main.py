@@ -5,17 +5,17 @@ from service.language_process_service import LanguageProcessService
 language_process_service = LanguageProcessService()
 
 # static variable
-stopword_file_path = './file/vietnamese-stopwords.txt'
+stopwords_dir = './file/stopwords'
+test_dir = './file/test'
+train_dir = './file/train'
 
 
-def print_hi(name):
-    str = language_process_service.extract_from_file(stopword_file_path)
-    print(f'Hi, {name}')
-    print(f'Hi, {str}')
+def main_function():
+    language_process_service.process_data(test_dir)
 
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    main_function()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
