@@ -5,7 +5,10 @@ import nltk
 from bs4 import BeautifulSoup
 from nltk.tokenize import word_tokenize
 
+from service.tf_idf_service import TfIdfService
+
 stopwords_file = './file/stopwords/english_stopwords'
+tf_idf_service = TfIdfService()
 
 
 class LanguageProcessService:
@@ -24,7 +27,7 @@ class LanguageProcessService:
         for filename in os.listdir(directory):
             file_path = os.path.join(directory, filename)
             file_path = os.path.normpath(file_path)
-            print(f'File name: {file_path}')
+            # print(f'File name: {file_path}')
 
             list_of_file.append(file_path)
         return list_of_file
@@ -36,7 +39,7 @@ class LanguageProcessService:
     def clean_data(self, data):
         clean_data = []
         stopwords = self.extract_stopwords()
-        print(f'stopwords: {stopwords}')
+        # print(f'stopwords: {stopwords}')
 
         # remove XML and HTML tag from text
         for text in data:
@@ -52,13 +55,14 @@ class LanguageProcessService:
 
                 # remove stopwords
                 filtered_tokens = [token for token in tokens if token not in stopwords]
-                print(f'clean_text: {filtered_tokens}')
+                # print(f'clean_text: {filtered_tokens}')
                 clean_data.append(filtered_tokens)
 
         return clean_data
 
     def process_data(self, directory):
         clean_data_arr = []
+        file_len = []
 
         # extract data from file
         for file in self.get_directory_file(directory):
@@ -68,7 +72,33 @@ class LanguageProcessService:
             # clean_data
             clean_data = self.clean_data(data)
 
-            print(f'data: {clean_data}')
+            # print(f'data: {clean_data}')
             clean_data_arr.append(clean_data)
 
-        print(f'clean_data_arr: {clean_data_arr}')
+        # print(f'clean_data_arr: {clean_data_arr}')
+        inverted_index = {}
+        doc_idx_token_token_freq = {}
+        doc_idx_max_freq_token = {}
+
+        for doc_index, documents in enumerate(clean_data_arr):
+            inverted_index, doc_idx_token_token_freq = tf_idf_service.gen_inverted_index(documents)
+
+        for doc_index, documents in enumerate(clean_data_arr):
+            doc_idx_max_freq_token[doc_index] = tf_idf_service.gen_doc_idx_max_freq_token(documents,
+                                                                                          doc_idx_token_token_freq)
+
+        # print(f'doc_idx_max_freq_token: {doc_idx_max_freq_token}')
+        # print(f'inverted_index: {inverted_index}')
+        # print(f'doc_idx_token_token_freq: {doc_idx_token_token_freq}')
+        for token in inverted_index.keys():
+            D_t = inverted_index[token]
+            for inverted_data_idx, (doc_idx, tf) in enumerate(D_t):
+                # Cập nhật lại trọng số tf của token đang xét
+                (max_freq_token, max_freq) = doc_idx_max_freq_token[0][doc_idx]
+                if max_freq > 0:
+                    update_tf = tf / max_freq
+                    # Cập nhật lại dữ liệu
+                    inverted_index[token][inverted_data_idx] = (doc_idx, update_tf)
+
+        for index, file in enumerate(clean_data_arr):
+            tf_idf_service.calculate_tf_idf(inverted_index, len(file))
