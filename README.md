@@ -7,4 +7,6 @@ Project:
 
 
  An efficient method for mining high occupancy itemsets based on
- equivalence class and early pruning
+ equivalence class and early pruning.
+
+Url for research: https://www.kaggle.com/code/staefff/extractive-text-summarization-with-pagerank 
