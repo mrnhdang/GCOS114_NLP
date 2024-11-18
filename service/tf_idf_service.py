@@ -53,8 +53,7 @@ class TfIdfService:
         return doc_idx_max_freq_token
 
     def calculate_tf_idf(self, inverted_index, documents_length):
-        print(f'inverted_index: {inverted_index}')
-        document_scores = {}
+        # print(f'inverted_index: {inverted_index}')
         doc_id_tfidf_encoded_vector_dict = {}
         for token in inverted_index.keys():
             D_t = inverted_index[token]
@@ -66,11 +65,6 @@ class TfIdfService:
                 # print('Từ: [', token, ']-> tài liệu số: [', doc_idx, '], TF-IDF = [', tfidf, ']')
 
                 tfidf_vector[index] = tfidf
-
-                if doc_idx in document_scores:
-                    document_scores[doc_idx] += tfidf
-                else:
-                    document_scores[doc_idx] = tfidf
                 doc_id_tfidf_encoded_vector_dict[doc_idx] = tfidf_vector
         # print(f'doc_id_tfidf_encoded_vector_dict: {doc_id_tfidf_encoded_vector_dict}/n')
 
@@ -83,5 +77,5 @@ class TfIdfService:
                     similarity_matrix[i][j] = 1 - distance.cosine(doc_id_tfidf_encoded_vector_dict[i],
                                                                   doc_id_tfidf_encoded_vector_dict[j])
 
-        print(f'similarity_matrix:\n {similarity_matrix}')
-        return document_scores
+        # print(f'similarity_matrix:\n {similarity_matrix[0]}')
+        return similarity_matrix
