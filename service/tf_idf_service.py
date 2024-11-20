@@ -1,7 +1,6 @@
 import math
 
 import numpy as np
-from nltk.metrics.aline import similarity_matrix
 from scipy.spatial import distance
 
 
@@ -53,29 +52,45 @@ class TfIdfService:
         return doc_idx_max_freq_token
 
     def calculate_tf_idf(self, inverted_index, documents_length):
-        # print(f'inverted_index: {inverted_index}')
-        doc_id_tfidf_encoded_vector_dict = {}
-        for token in inverted_index.keys():
-            D_t = inverted_index[token]
+        # Initialize TF-IDF vector as a list of dictionaries
+        tfidf_vector = [{} for _ in range(documents_length)]
+
+        # Calculate TF-IDF for each token
+        for token, D_t in inverted_index.items():
             doc_freq = len(D_t)
-            tfidf_vector = np.zeros(documents_length)
-            for index, (doc_idx, tf) in enumerate(D_t):
-                idf = math.log((documents_length / doc_freq), 2)
-                tfidf = tf * idf
-                # print('Từ: [', token, ']-> tài liệu số: [', doc_idx, '], TF-IDF = [', tfidf, ']')
+            idf = math.log((documents_length / doc_freq), 2)
 
-                tfidf_vector[index] = tfidf
-                doc_id_tfidf_encoded_vector_dict[doc_idx] = tfidf_vector
-        # print(f'doc_id_tfidf_encoded_vector_dict: {doc_id_tfidf_encoded_vector_dict}/n')
+            for doc_idx, tf in D_t:
+                tf_idf = tf * idf
+                if token in tfidf_vector[doc_idx]:
+                    tfidf_vector[doc_idx][token] += tf_idf
+                else:
+                    tfidf_vector[doc_idx][token] = tf_idf
 
-        # Duyệt qua danh sách các tài liệu/văn bản (đã mã hóa ở dạng  vectors)
-        similarity_matrix = np.zeros((documents_length, documents_length))
+        return tfidf_vector
 
-        for i in range(documents_length):
-            for j in range(documents_length):
-                if i != j:
-                    similarity_matrix[i][j] = 1 - distance.cosine(doc_id_tfidf_encoded_vector_dict[i],
-                                                                  doc_id_tfidf_encoded_vector_dict[j])
+    def calculate_cosine_similarity(self, tfidf_vector):
+        # Get the number of documents
+        num_documents = len(tfidf_vector)
 
-        # print(f'similarity_matrix:\n {similarity_matrix[0]}')
+        # Initialize a similarity matrix with zeros
+        similarity_matrix = np.zeros((num_documents, num_documents))
+
+        # Convert TF-IDF dictionaries into dense vectors
+        all_tokens = set(token for doc in tfidf_vector for token in doc.keys())
+        token_to_index = {token: idx for idx, token in enumerate(all_tokens)}
+
+        dense_vectors = []
+        for doc in tfidf_vector:
+            vector = [doc.get(token, 0) for token in token_to_index]
+            dense_vectors.append(vector)
+
+        # Calculate cosine similarity
+        for i in range(num_documents):
+            for j in range(num_documents):
+                if i == j:
+                    similarity_matrix[i][j] = 1.0  # Self-similarity is always 1
+                else:
+                    similarity_matrix[i][j] = 1 - distance.cosine(dense_vectors[i], dense_vectors[j])
+
         return similarity_matrix

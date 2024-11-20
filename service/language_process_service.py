@@ -4,6 +4,7 @@ import nltk
 import numpy as np
 # nltk.download('punkt_tab')
 from bs4 import BeautifulSoup
+# from nltk.metrics.aline import similarity_matrix
 from nltk.tokenize import word_tokenize
 
 from service.tf_idf_service import TfIdfService
@@ -53,10 +54,10 @@ class LanguageProcessService:
             # check empty string
             if clean_text.strip():
                 clean_text_arr.append(clean_text)
-                clean_text = clean_text.lower()
+
                 # remove Punctuation
                 clean_text = re.sub('\W+', ' ', clean_text)
-
+                clean_text = clean_text.lower()
                 tokens = word_tokenize(clean_text)
 
                 # remove stopwords
@@ -77,7 +78,7 @@ class LanguageProcessService:
         # clean_data
         clean_data, clean_text_arr = self.clean_data(data)
 
-        # print(f'data: {clean_data}')
+        print(f'data: {clean_data}')
         clean_data_arr.append(clean_data)
 
         # print(f'clean_data_arr: {clean_data_arr}')
@@ -105,17 +106,18 @@ class LanguageProcessService:
                     # Cập nhật lại dữ liệu
                     inverted_index[token][inverted_data_idx] = (doc_idx, update_tf)
 
-        similarity_matrix = []
+        tfidf_vector = []
         for index, file in enumerate(clean_data_arr):
-            similarity_matrix = tf_idf_service.calculate_tf_idf(inverted_index, len(file))
+            tfidf_vector = tf_idf_service.calculate_tf_idf(inverted_index, len(file))
+
+        similarity_matrix = tf_idf_service.calculate_cosine_similarity(tfidf_vector)
         print(f'similarity_matrix: {similarity_matrix}')
 
-        pageranks = page_rank_service.cal_page_rank_score(similarity_matrix)
-        print(f"pageranks: {pageranks}")
-        # sort data pagerank and return
-        ranked_sentences = sorted(((pageranks[i], s) for i, s in enumerate(clean_text_arr)), reverse=True)
+        pagerank_scores = page_rank_service.cal_page_rank_score(similarity_matrix)
+        print(f'pagerank: {pagerank_scores}')
+
         length = len(clean_text_arr)
         k = int(length * 10 / 100)
-        test = ranked_sentences[:k]
-        for sentence in test:
-            print(sentence)
+        ranked_sentences = sorted(((score, idx) for idx, score in enumerate(pagerank_scores)), reverse=True)
+        summary = ' '.join(clean_text_arr[idx] for _, idx in ranked_sentences[:k])
+        print(f'summary: {summary}')
