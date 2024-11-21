@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 from scipy.spatial import distance
+from nltk.tokenize import word_tokenize
 
 
 class TfIdfService:
@@ -9,7 +10,10 @@ class TfIdfService:
         inverted_index = {}
         doc_idx_token_token_freq = {}
         for doc_idx, doc in enumerate(documents):
-            for token in doc:
+            tokens = word_tokenize(doc.lower())
+            # Tiến hành thay thế các khoảng trắng ' ' trong các từ ghép thành '_'
+            tokens = [token.replace(' ', '_') for token in tokens]
+            for token in tokens:
                 if token not in inverted_index.keys():
                     inverted_index[token] = [(doc_idx, 1)]
                 else:
@@ -23,7 +27,7 @@ class TfIdfService:
                             is_existed = True
                             break
                     # Trường hợp chưa tồn tại
-                    if is_existed == False:
+                    if not is_existed:
                         inverted_index[token].append((doc_idx, 1))
                     if doc_idx not in doc_idx_token_token_freq.keys():
                         doc_idx_token_token_freq[doc_idx] = {}
@@ -43,7 +47,7 @@ class TfIdfService:
                 if doc_idx_token_token_freq[doc_idx][token] > max_freq:
                     max_freq_token = token
                     max_freq = doc_idx_token_token_freq[doc_idx][token]
-        return (max_freq_token, max_freq)
+        return max_freq_token, max_freq
 
     def gen_doc_idx_max_freq_token(self, documents, doc_idx_token_token_freq):
         doc_idx_max_freq_token = {}
@@ -66,7 +70,7 @@ class TfIdfService:
                     tfidf_vector[doc_idx][token] += tf_idf
                 else:
                     tfidf_vector[doc_idx][token] = tf_idf
-
+        print(f'tfidf_vector: {tfidf_vector}')
         return tfidf_vector
 
     def calculate_cosine_similarity(self, tfidf_vector):

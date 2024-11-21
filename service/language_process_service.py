@@ -58,12 +58,12 @@ class LanguageProcessService:
                 # remove Punctuation
                 clean_text = re.sub('\W+', ' ', clean_text)
                 clean_text = clean_text.lower()
-                tokens = word_tokenize(clean_text)
+                # tokens = word_tokenize(clean_text)
 
                 # remove stopwords
-                filtered_tokens = [token for token in tokens if token not in stopwords]
+                # filtered_tokens = [token for token in tokens if token not in stopwords]
                 # print(f'clean_text: {filtered_tokens}')
-                clean_data.append(filtered_tokens)
+                clean_data.append(clean_text)
         return clean_data, clean_text_arr
 
     def process_data(self, directory):
@@ -78,20 +78,17 @@ class LanguageProcessService:
         # clean_data
         clean_data, clean_text_arr = self.clean_data(data)
 
-        print(f'data: {clean_data}')
+        # print(f'data: {clean_data}')
         clean_data_arr.append(clean_data)
 
         # print(f'clean_data_arr: {clean_data_arr}')
-        inverted_index = {}
-        doc_idx_token_token_freq = {}
-        doc_idx_max_freq_token = {}
 
-        for doc_index, documents in enumerate(clean_data_arr):
-            inverted_index, doc_idx_token_token_freq = tf_idf_service.gen_inverted_index(documents)
+        # for doc_index, documents in enumerate(clean_data_arr):
+        inverted_index, doc_idx_token_token_freq = tf_idf_service.gen_inverted_index(clean_data)
 
-        for doc_index, documents in enumerate(clean_data_arr):
-            doc_idx_max_freq_token[doc_index] = tf_idf_service.gen_doc_idx_max_freq_token(documents,
-                                                                                          doc_idx_token_token_freq)
+        # for doc_index, documents in enumerate(clean_data_arr):
+        doc_idx_max_freq_token = tf_idf_service.gen_doc_idx_max_freq_token(clean_data,
+                                                                           doc_idx_token_token_freq)
 
         # print(f'doc_idx_max_freq_token: {doc_idx_max_freq_token}')
         # print(f'inverted_index: {inverted_index}')
@@ -100,7 +97,7 @@ class LanguageProcessService:
             D_t = inverted_index[token]
             for inverted_data_idx, (doc_idx, tf) in enumerate(D_t):
                 # Cập nhật lại trọng số tf của token đang xét
-                (max_freq_token, max_freq) = doc_idx_max_freq_token[0][doc_idx]
+                (max_freq_token, max_freq) = doc_idx_max_freq_token[doc_idx]
                 if max_freq > 0:
                     update_tf = tf / max_freq
                     # Cập nhật lại dữ liệu
@@ -111,10 +108,10 @@ class LanguageProcessService:
             tfidf_vector = tf_idf_service.calculate_tf_idf(inverted_index, len(file))
 
         similarity_matrix = tf_idf_service.calculate_cosine_similarity(tfidf_vector)
-        print(f'similarity_matrix: {similarity_matrix}')
+        # print(f'similarity_matrix: {similarity_matrix}')
 
         pagerank_scores = page_rank_service.cal_page_rank_score(similarity_matrix)
-        print(f'pagerank: {pagerank_scores}')
+        # print(f'pagerank: {pagerank_scores}')
 
         length = len(clean_text_arr)
         k = int(length * 10 / 100)
