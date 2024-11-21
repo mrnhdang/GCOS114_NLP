@@ -3,7 +3,7 @@ import numpy as np
 
 
 class PageRankService:
-    def cal_page_rank_score(self, similarity_matrix, max_iter=100, d=0.85, beta=0.15, tol=1.0e-8):
+    def cal_page_rank_score(self, similarity_matrix, max_iter=200, d=0.85, beta=0.15, tol=1.0e-8):
         num_sentences = similarity_matrix.shape[0]
         pagerank = np.ones(num_sentences) / num_sentences
 

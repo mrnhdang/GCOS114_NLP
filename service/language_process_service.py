@@ -9,10 +9,12 @@ from nltk.tokenize import word_tokenize
 
 from service.tf_idf_service import TfIdfService
 from service.page_rank_service import PageRankService
+from service.rough_service import RoughService
 
 stopwords_file = './file/stopwords/english_stopwords'
 tf_idf_service = TfIdfService()
 page_rank_service = PageRankService()
+rough_service = RoughService()
 
 
 class LanguageProcessService:
@@ -73,7 +75,7 @@ class LanguageProcessService:
         # extract data from file
         # for file in self.get_directory_file(directory):
         # extract_from_file
-        data = self.extract_from_file("./file/test/d070f")
+        data = self.extract_from_file("./file/train/d061j")
 
         # clean_data
         clean_data, clean_text_arr = self.clean_data(data)
@@ -116,5 +118,9 @@ class LanguageProcessService:
         length = len(clean_text_arr)
         k = int(length * 10 / 100)
         ranked_sentences = sorted(((score, idx) for idx, score in enumerate(pagerank_scores)), reverse=True)
-        summary = ' '.join(clean_text_arr[idx] for _, idx in ranked_sentences[:k])
-        print(f'summary: {summary}')
+
+        summary = ''
+        for _, idx in ranked_sentences[:k]:
+            summary = ' '.join(clean_text_arr[idx] for _, idx in ranked_sentences[:k])
+        print(f'SUMMARY:\n {summary}')
+        return summary

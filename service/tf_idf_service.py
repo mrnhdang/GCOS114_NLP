@@ -70,7 +70,7 @@ class TfIdfService:
                     tfidf_vector[doc_idx][token] += tf_idf
                 else:
                     tfidf_vector[doc_idx][token] = tf_idf
-        print(f'tfidf_vector: {tfidf_vector}')
+        # print(f'tfidf_vector: {tfidf_vector}')
         return tfidf_vector
 
     def calculate_cosine_similarity(self, tfidf_vector):
