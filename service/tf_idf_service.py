@@ -54,60 +54,58 @@ class TfIdfService:
                     max_freq = doc_idx_token_token_freq[doc_idx][token]
         return max_freq_token, max_freq
 
-    def gen_doc_idx_max_freq_token(self, clean_data_arr, doc_idx_token_token_freq):
+    def gen_doc_idx_max_freq_token(self, documents, doc_idx_token_token_freq):
         doc_idx_max_freq_token = {}
-        for data_index, documents in enumerate(clean_data_arr):
-            doc_idx_max_freq_token.update({data_index: {}})
-            for doc_idx, doc in enumerate(documents):
-                doc_idx_max_freq_token[data_index][doc_idx] = self.find_max_freq_token(doc_idx,
-                                                                                       doc_idx_token_token_freq[
-                                                                                           data_index])
+        for doc_idx, doc in enumerate(documents):
+            doc_idx_max_freq_token[doc_idx] = self.find_max_freq_token(doc_idx, doc_idx_token_token_freq)
         return doc_idx_max_freq_token
 
-    def calculate_tf_idf(self, inverted_index, clean_data_arr):
+    def calculate_tf_idf(self, inverted_index, documents):
         # Initialize TF-IDF vector as a list of dictionaries
         tfidf_vector = {}
-        for data_index, documents in enumerate(clean_data_arr):
-            documents_length = len(documents)
+        documents_length = len(documents)
 
-            tfidf_vector.update({data_index: [{} for _ in range(documents_length)]})
+        tfidf_vector = [{} for _ in range(documents_length)]
 
-            # Calculate TF-IDF for each token
-            for token, D_t in inverted_index[data_index].items():
-                doc_freq = len(D_t)
-                idf = math.log((documents_length / doc_freq), 2)
+        # Calculate TF-IDF for each token
+        for token, D_t in inverted_index.items():
+            doc_freq = len(D_t)
+            idf = math.log((documents_length / doc_freq), 2)
 
-                for doc_idx, tf in D_t:
-                    tf_idf = tf * idf
-                    if token in tfidf_vector[data_index][doc_idx]:
-                        tfidf_vector[data_index][doc_idx][token] += tf_idf
-                    else:
-                        tfidf_vector[data_index][doc_idx][token] = tf_idf
+            for doc_idx, tf in D_t:
+                tf_idf = tf * idf
+                if token in tfidf_vector[doc_idx]:
+                    tfidf_vector[doc_idx][token] += tf_idf
+                else:
+                    tfidf_vector[doc_idx][token] = tf_idf
         return tfidf_vector
 
-    def calculate_cosine_similarity(self, tfidf_vector, clean_data_arr):
-        similarity_matrix = {}
-        for data_index, documents in enumerate(clean_data_arr):
-            # Get the number of documents
-            num_documents = len(tfidf_vector[data_index])
+    def calculate_cosine_similarity(self, tfidf_vector):
+        # Get the number of documents
+        num_documents = len(tfidf_vector)
 
-            # Initialize a similarity matrix with zeros
-            similarity_matrix.update({data_index: np.zeros((num_documents, num_documents))})
+        # Extract all unique tokens and create an index mapping
+        all_tokens = set(token for doc in tfidf_vector for token in doc)
+        token_to_index = {token: idx for idx, token in enumerate(all_tokens)}
 
-            # Convert TF-IDF dictionaries into dense vectors
-            all_tokens = set(token for doc in tfidf_vector[data_index] for token in doc)
-            token_to_index = {token: idx for idx, token in enumerate(all_tokens)}
+        # Convert TF-IDF dictionaries into dense vectors using a matrix for efficiency
+        dense_vectors = np.zeros((num_documents, len(all_tokens)))
+        for doc_idx, doc in enumerate(tfidf_vector):
+            for token, value in doc.items():
+                dense_vectors[doc_idx][token_to_index[token]] = value
 
-            dense_vectors = []
-            for doc in tfidf_vector[data_index]:
-                vector = [doc.get(token, 0) for token in token_to_index]
-                dense_vectors.append(vector)
+        # Precompute norms to avoid redundant calculations
+        norms = np.linalg.norm(dense_vectors, axis=1)
+        norms[norms == 0] = 1  # Avoid division by zero for zero vectors
 
-            # Calculate cosine similarity
-            for i in range(num_documents):
-                for j in range(num_documents):
-                    if i == j:
-                        similarity_matrix[data_index][i][j] = 1  # Self-similarity is always 1
-                    else:
-                        similarity_matrix[data_index][i][j] = 1 - distance.cosine(dense_vectors[i], dense_vectors[j])
+        # Initialize similarity matrix
+        similarity_matrix = np.eye(num_documents)  # Self-similarity is 1 (diagonal)
+
+        # Calculate cosine similarity using vectorized operations
+        for i in range(num_documents):
+            for j in range(i + 1, num_documents):  # Only compute upper triangular
+                similarity = 1 - distance.cosine(dense_vectors[i], dense_vectors[j])
+                similarity_matrix[i][j] = similarity
+                similarity_matrix[j][i] = similarity  # Mirror the value
+
         return similarity_matrix

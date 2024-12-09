@@ -79,32 +79,30 @@ class LanguageProcessService:
 
         inverted_index, doc_idx_token_token_freq = tf_idf_service.gen_inverted_index(clean_data_arr, stopwords)
 
-        doc_idx_max_freq_token = tf_idf_service.gen_doc_idx_max_freq_token(clean_data_arr,
-                                                                           doc_idx_token_token_freq)
+        summary_arr = []
         for data_index, documents in enumerate(clean_data_arr):
+            doc_idx_max_freq_token = tf_idf_service.gen_doc_idx_max_freq_token(documents,
+                                                                               doc_idx_token_token_freq[data_index])
             for token in inverted_index[data_index].keys():
                 D_t = inverted_index[data_index][token]
                 for inverted_data_idx, (doc_idx, tf) in enumerate(D_t):
                     # Cập nhật lại trọng số tf của token đang xét
-                    (max_freq_token, max_freq) = doc_idx_max_freq_token[data_index][doc_idx]
+                    (max_freq_token, max_freq) = doc_idx_max_freq_token[doc_idx]
                     if max_freq > 0:
                         update_tf = tf / max_freq
                         # Cập nhật lại dữ liệu
                         inverted_index[data_index][token][inverted_data_idx] = (doc_idx, update_tf)
 
-        tfidf_vector = tf_idf_service.calculate_tf_idf(inverted_index, clean_data_arr)
+            tfidf_vector = tf_idf_service.calculate_tf_idf(inverted_index[data_index], documents)
 
-        similarity_matrix = tf_idf_service.calculate_cosine_similarity(tfidf_vector, clean_data_arr)
+            similarity_matrix = tf_idf_service.calculate_cosine_similarity(tfidf_vector)
 
-        pagerank_scores = page_rank_service.cal_page_rank_score(similarity_matrix, clean_data_arr)
+            pagerank_scores = page_rank_service.cal_page_rank_score(similarity_matrix)
 
-        # print(clean_data_arr)
-        summary_arr = []
-        for data_index, documents in enumerate(clean_data_arr):
             length = len(clean_text_arr[data_index])
             k = int(length * 10 / 100)
             ranked_sentences = sorted(
-                ((score, idx) for idx, score in enumerate(pagerank_scores[data_index])),
+                ((score, idx) for idx, score in enumerate(pagerank_scores)),
                 reverse=True
             )
             summary = ''
